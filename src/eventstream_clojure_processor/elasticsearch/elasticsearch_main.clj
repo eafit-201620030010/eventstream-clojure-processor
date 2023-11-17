@@ -3,9 +3,9 @@
    [qbits.spandex :as spandex]
    [clojure.data.json :as json-kafka]
    [clojure.java.io :as jio]
-   [eventstream-clojure-processor.opensearch.kafka :as kafka]))
+   [eventstream-clojure-processor.elasticsearch.kafka :as kafka]))
 
-(defn create-opensearch-client [url]
+(defn create-elasticsearch-client [url]
   (let [options {:hosts [url]
                  :http-client {:basic-auth {:user "user" :password "password"}}}
         client (spandex/client options)]
@@ -35,7 +35,7 @@
                         :body document}))
     (println "Messages were sent to the index.")
     (catch Exception e
-      (println (str "Error sending messages to OpenSearch: " (.getMessage e))))))
+      (println (str "Error sending messages to Elasticsearch: " (.getMessage e))))))
 
 (defn process-wikimedia-event [event client index-name]
   (try
@@ -51,11 +51,11 @@
 
 (defn -main [& args]
   (try
-    (let [opensearch-client (create-opensearch-client "https://eventstream-kafka-cl-5439517819.us-east-1.bonsaisearch.net:443")
+    (let [elasticsearch-client (create-elasticsearch-client "https://eventstream-kafka-cl-5439517819.us-east-1.bonsaisearch.net:443")
           index-name "eventstream-wikimedia"
           kafka-config-fname (first args)
           kafka-topic (second args)]
-      (kafka/consume-wikimedia-events kafka-config-fname kafka-topic #(process-wikimedia-event % opensearch-client index-name))
-      (create-index opensearch-client index-name))
+      (kafka/consume-wikimedia-events kafka-config-fname kafka-topic #(process-wikimedia-event % elasticsearch-client index-name))
+      (create-index elasticsearch-client index-name))
     (catch Exception e
       (println (str "Error in main function:" (.getMessage e))))))
