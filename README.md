@@ -1,40 +1,75 @@
 # eventstream-clojure-processor
 
-FIXME: description
+## Prerequisites
 
-## Installation
+- Java 8 or Java 11
+- Clojure/Leiningen
+- Kafka Cluster with Confluent Cloud
+- Elasticsearch with Bonsai.io
 
-Download from http://example.com/FIXME.
+```sh
+Note: Please note that the Bonsai and Confluent Cloud accounts I utilize can be easily created for free, and the process takes no more than 5 minutes to complete
+```
 
-## Usage
+## Setup
 
-lein run -m eventstream-clojure-processor.eventstreams.main $HOME/.confluent/clojure.config wikimedia.recentchange
+```sh
+git clone https://github.com/eafit-201620030010/eventstream-clojure-processor.git
+```
 
-FIXME: explanation
+- Configuration parameters to connect to your Kafka Cluster. for example: $HOME/.confluent/clojure.config
 
-    $ java -jar eventstream-clojure-processor-0.1.0-standalone.jar [args]
+- Template configuration file for Confluent Cloud
 
-## Options
+```sh
+# Required connection configs for Kafka producer, consumer, and admin
+bootstrap.servers={{ BROKER_ENDPOINT }}
+security.protocol=SASL_SSL
+sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username='{{ CLUSTER_API_KEY }}' password='{{ CLUSTER_API_SECRET }}';
+sasl.mechanism=PLAIN
+# Required for correctness in Apache Kafka clients prior to 2.6
+client.dns.lookup=use_all_dns_ips
 
-FIXME: listing of options this app accepts.
+# Best practice for higher availability in Apache Kafka clients prior to 3.0
+session.timeout.ms=45000
 
-## Examples
+# Best practice for Kafka producer to prevent data loss
+acks=all
+```
 
-...
+- Config elasticsearch client {:user "" :password: ""} in elasticsearch_main.clj
 
-### Bugs
+```clojure
+(defn create-elasticsearch-client [url]
+  (let [options {:hosts [url]
+                 :http-client {:basic-auth {:user "user" :password "password"}}}
+        client (spandex/client options)]
+    client))
+```
 
-...
+- Config elasticsearch URL in elasticsearch_main.clj
 
-### Any Other Sections
+```clojure
+(create-elasticsearch-client "https://eventstream-kafka-cl-5439517819.us-east-1.bonsaisearch.net:443")
+```
 
-### That You Think
+## Run
 
-### Might be Useful
+1. Wikimedia Event Stream
+
+```sh
+lein wikimedia-stream $HOME/.confluent/clojure.config wikimedia.recentchange
+```
+
+2. Consumer Kafka And Elasticsearch client
+
+```sh
+lein consumer-kafka-elastic $HOME/.confluent/clojure.config wikimedia.recentchange
+```
 
 ## License
 
-Copyright © 2023 FIXME
+Copyright © 2023 jjchavarrg
 
 This program and the accompanying materials are made available under the
 terms of the Eclipse Public License 2.0 which is available at
